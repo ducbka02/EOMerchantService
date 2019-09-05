@@ -1,0 +1,16 @@
+{
+  "debug": true,
+  "server": {
+    "address": ":3000"
+  },
+  "context": {
+    "timeout": 5
+  },
+  "database": {
+    "host": "171.244.143.166",
+    "port": "3306",
+    "user": "root",
+    "pass": "Dev@2019",
+    "name": "ecoone_merchant"
+  }
+}
