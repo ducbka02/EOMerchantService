@@ -43,6 +43,16 @@ func (a *mysqlMerchantRepository) fetch(ctx context.Context, query string, args 
 		err = rows.Scan(
 			&t.ID,
 			&t.Name,
+			&t.Address,
+			&t.Latitude,
+			&t.Longitude,
+			&t.Phone,
+			&t.Description,
+			&t.Image,
+			&t.Delivery,
+			&t.TimeStart,
+			&t.TimeEnd,
+			&t.Facebook,
 		)
 
 		if err != nil {
@@ -56,7 +66,7 @@ func (a *mysqlMerchantRepository) fetch(ctx context.Context, query string, args 
 }
 
 func (a *mysqlMerchantRepository) Fetch(ctx context.Context) ([]*models.Merchant, error) {
-	query := `SELECT mb_merchant_id, name FROM mb_merchant`
+	query := `SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, image, delivery, time_start, time_end, facebook FROM mb_merchant`
 	res, err := a.fetch(ctx, query)
 	if err != nil {
 		return nil, err
@@ -66,7 +76,7 @@ func (a *mysqlMerchantRepository) Fetch(ctx context.Context) ([]*models.Merchant
 }
 
 func (a *mysqlMerchantRepository) GetByID(ctx context.Context, id int64) (res *models.Merchant, err error) {
-	query := `SELECT mb_merchant_id, name FROM mb_merchant WHERE mb_merchant_id = ?`
+	query := `SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, image, delivery, time_start, time_end, facebook FROM mb_merchant WHERE mb_merchant_id = ?`
 
 	list, err := a.fetch(ctx, query, id)
 	if err != nil {
@@ -83,7 +93,7 @@ func (a *mysqlMerchantRepository) GetByID(ctx context.Context, id int64) (res *m
 }
 
 func (a *mysqlMerchantRepository) FilterByMulti(ctx context.Context, clause string) ([]*models.Merchant, error) {
-	query := fmt.Sprintf("SELECT mb_merchant_id, name FROM mb_merchant WHERE %s", clause)
+	query := fmt.Sprintf("SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, image, delivery, time_start, time_end, facebook FROM mb_merchant WHERE %s", clause)
 	fmt.Println(query)
 	list, err := a.fetch(ctx, query)
 	if err != nil {
@@ -93,8 +103,16 @@ func (a *mysqlMerchantRepository) FilterByMulti(ctx context.Context, clause stri
 	return list, nil
 }
 
-func (a *mysqlMerchantRepository) GetByTitle(ctx context.Context, title string) (*models.Merchant, error) {
-	return nil, nil
+func (a *mysqlMerchantRepository) SearchByKeyword(ctx context.Context, keyword string) ([]*models.Merchant, error) {
+	query := `SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, image, delivery, time_start, time_end, facebook FROM mb_merchant WHERE name like ?`
+
+	fmt.Println(query)
+	list, err := a.fetch(ctx, query, "%"+keyword+"%")
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
 }
 
 func (a *mysqlMerchantRepository) Update(ctx context.Context, m *models.Merchant) error {

@@ -57,8 +57,16 @@ func (a *merchantUsecase) FilterByMulti(c context.Context, clause string) ([]*mo
 	return res, nil
 }
 
-func (a *merchantUsecase) GetByTitle(ctx context.Context, title string) (*models.Merchant, error) {
-	return nil, nil
+func (a *merchantUsecase) SearchByKeyword(c context.Context, keyword string) ([]*models.Merchant, error) {
+	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
+	defer cancel()
+
+	res, err := a.merchantRepo.SearchByKeyword(ctx, keyword)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func (a *merchantUsecase) Update(ctx context.Context, m *models.Merchant) error {

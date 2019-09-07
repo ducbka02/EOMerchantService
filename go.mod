@@ -9,4 +9,5 @@ require (
 	github.com/sirupsen/logrus v1.2.0
 	github.com/spf13/viper v1.4.0
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472 // indirect
+	gopkg.in/guregu/null.v3 v3.4.0
 )

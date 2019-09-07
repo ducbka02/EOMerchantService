@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"fmt"
 	"merchant-service/merchant"
 	"merchant-service/models"
 	"net/http"
@@ -31,6 +30,7 @@ func NewMerchantHandler(e *echo.Echo, us merchant.Usecase) {
 	e.GET("/merchant/merchants", handler.FetchMerchant)
 	e.GET("/merchant/:id", handler.GetByID)
 	e.GET("/merchant/filter", handler.FilterByMulti)
+	e.GET("/merchant/search", handler.SearchByKeyword)
 }
 
 // FetchMerchant will fetch the merchant based on given params
@@ -54,7 +54,6 @@ func (a *MerchantHandler) Store(c echo.Context) error {
 // GetByID an merchant by id
 func (a *MerchantHandler) GetByID(c echo.Context) error {
 	idP, err := strconv.Atoi(c.Param("id"))
-	fmt.Println(idP)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, models.ErrNotFound.Error())
 	}
@@ -80,7 +79,6 @@ func (a *MerchantHandler) FilterByMulti(c echo.Context) error {
 		queryParamsSlice = append(queryParamsSlice, key+"="+value[0])
 	}
 	queryParamsString := strings.Join(queryParamsSlice[:], "&")
-	fmt.Println(queryParamsString)
 
 	ctx := c.Request().Context()
 	if ctx == nil {
@@ -92,8 +90,24 @@ func (a *MerchantHandler) FilterByMulti(c echo.Context) error {
 		return c.String(http.StatusOK, "Fetch fail")
 	}
 	return c.JSON(http.StatusOK, listAr)
+}
 
-	//return c.String(http.StatusOK, "FilterByMulti")
+// SearchByKeyword some merchant by clause
+func (a *MerchantHandler) SearchByKeyword(c echo.Context) error {
+	keyword := c.QueryParam("keyword")
+	if len(keyword) == 0 {
+		return c.JSON(http.StatusOK, "Chưa nhập từ khóa tìm kiếm")
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	listAr, err := a.MUsecase.SearchByKeyword(ctx, keyword)
+	if err != nil {
+		return c.String(http.StatusOK, "Không tìm thấy kết quả")
+	}
+	return c.JSON(http.StatusOK, listAr)
 }
 
 // Delete an merchant by id
