@@ -45,6 +45,18 @@ func (a *merchantUsecase) GetByID(c context.Context, id int64) (*models.Merchant
 	return res, nil
 }
 
+func (a *merchantUsecase) GetImagesByID(c context.Context, id int64) ([]*models.Image, error) {
+	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
+	defer cancel()
+
+	res, err := a.merchantRepo.GetImagesByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func (a *merchantUsecase) FilterByMulti(c context.Context, clause string) ([]*models.Merchant, error) {
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 	defer cancel()

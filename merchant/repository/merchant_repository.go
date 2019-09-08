@@ -54,7 +54,51 @@ func (a *mysqlMerchantRepository) fetch(ctx context.Context, query string, args 
 			&t.TimeEnd,
 			&t.Facebook,
 		)
+		if err != nil {
+			logrus.Error(err)
+			return nil, err
+		}
+		results = append(results, t)
+	}
 
+	return results, nil
+}
+
+func (a *mysqlMerchantRepository) fetchDetail(ctx context.Context, query string, id int64) ([]*models.Merchant, error) {
+	rows, err := a.DB.QueryContext(ctx, query)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
+
+	results := make([]*models.Merchant, 0)
+
+	images, _ := a.GetImagesByID(ctx, id)
+
+	for rows.Next() {
+		t := new(models.Merchant)
+		err = rows.Scan(
+			&t.ID,
+			&t.Name,
+			&t.Address,
+			&t.Latitude,
+			&t.Longitude,
+			&t.Phone,
+			&t.Description,
+			&t.Image,
+			&t.Delivery,
+			&t.TimeStart,
+			&t.TimeEnd,
+			&t.Facebook,
+		)
+		t.Images = images
 		if err != nil {
 			logrus.Error(err)
 			return nil, err
@@ -76,9 +120,9 @@ func (a *mysqlMerchantRepository) Fetch(ctx context.Context) ([]*models.Merchant
 }
 
 func (a *mysqlMerchantRepository) GetByID(ctx context.Context, id int64) (res *models.Merchant, err error) {
-	query := `SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, image, delivery, time_start, time_end, facebook FROM mb_merchant WHERE mb_merchant_id = ?`
+	query := fmt.Sprintf("SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, image, delivery, time_start, time_end, facebook FROM mb_merchant WHERE mb_merchant_id = %d", id)
 
-	list, err := a.fetch(ctx, query, id)
+	list, err := a.fetchDetail(ctx, query, id)
 	if err != nil {
 		return nil, err
 	}
@@ -92,9 +136,41 @@ func (a *mysqlMerchantRepository) GetByID(ctx context.Context, id int64) (res *m
 	return
 }
 
+func (a *mysqlMerchantRepository) GetImagesByID(ctx context.Context, id int64) ([]*models.Image, error) {
+	query := fmt.Sprintf("SELECT image FROM mb_merchant_image WHERE mb_merchant_id = %d", id)
+
+	rows, err := a.DB.QueryContext(ctx, query)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
+
+	results := make([]*models.Image, 0)
+
+	for rows.Next() {
+		t := new(models.Image)
+		err = rows.Scan(
+			&t.Image,
+		)
+		if err != nil {
+			logrus.Error(err)
+			return nil, err
+		}
+		results = append(results, t)
+	}
+
+	return results, nil
+}
+
 func (a *mysqlMerchantRepository) FilterByMulti(ctx context.Context, clause string) ([]*models.Merchant, error) {
 	query := fmt.Sprintf("SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, image, delivery, time_start, time_end, facebook FROM mb_merchant WHERE %s", clause)
-	fmt.Println(query)
 	list, err := a.fetch(ctx, query)
 	if err != nil {
 		return nil, err
@@ -106,7 +182,6 @@ func (a *mysqlMerchantRepository) FilterByMulti(ctx context.Context, clause stri
 func (a *mysqlMerchantRepository) SearchByKeyword(ctx context.Context, keyword string) ([]*models.Merchant, error) {
 	query := `SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, image, delivery, time_start, time_end, facebook FROM mb_merchant WHERE name like ?`
 
-	fmt.Println(query)
 	list, err := a.fetch(ctx, query, "%"+keyword+"%")
 	if err != nil {
 		return nil, err

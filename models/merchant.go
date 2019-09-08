@@ -20,4 +20,5 @@ type Merchant struct {
 	TimeStart    null.String `json:"time_start"`
 	TimeEnd      null.String `json:"time_end"`
 	Facebook     null.String `json:"facebook"`
+	Images       []*Image    `json:"images"`
 }

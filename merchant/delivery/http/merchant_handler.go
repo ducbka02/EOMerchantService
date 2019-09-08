@@ -41,9 +41,12 @@ func (a *MerchantHandler) FetchMerchant(c echo.Context) error {
 	}
 	listAr, err := a.MUsecase.Fetch(ctx)
 	if err != nil {
-		return c.String(http.StatusOK, "Fetch fail")
+		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
-	return c.JSON(http.StatusOK, listAr)
+	return c.JSON(http.StatusOK, echo.Map{
+		"status": 1,
+		"data":   listAr,
+	})
 }
 
 // Store new merchant to database
@@ -64,11 +67,15 @@ func (a *MerchantHandler) GetByID(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	art, err := a.MUsecase.GetByID(ctx, id)
+	mers, err := a.MUsecase.GetByID(ctx, id)
 	if err != nil {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
-	return c.JSON(http.StatusOK, art)
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"status": 1,
+		"data":   mers,
+	})
 }
 
 // FilterByMulti some merchant by clause
@@ -87,9 +94,12 @@ func (a *MerchantHandler) FilterByMulti(c echo.Context) error {
 
 	listAr, err := a.MUsecase.FilterByMulti(ctx, queryParamsString)
 	if err != nil {
-		return c.String(http.StatusOK, "Fetch fail")
+		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
-	return c.JSON(http.StatusOK, listAr)
+	return c.JSON(http.StatusOK, echo.Map{
+		"status": 1,
+		"data":   listAr,
+	})
 }
 
 // SearchByKeyword some merchant by clause
@@ -105,9 +115,12 @@ func (a *MerchantHandler) SearchByKeyword(c echo.Context) error {
 
 	listAr, err := a.MUsecase.SearchByKeyword(ctx, keyword)
 	if err != nil {
-		return c.String(http.StatusOK, "Không tìm thấy kết quả")
+		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
-	return c.JSON(http.StatusOK, listAr)
+	return c.JSON(http.StatusOK, echo.Map{
+		"status": 1,
+		"data":   listAr,
+	})
 }
 
 // Delete an merchant by id
