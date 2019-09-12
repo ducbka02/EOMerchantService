@@ -21,11 +21,23 @@ func NewMerchantUsecase(a merchant.Repository, timeout time.Duration) merchant.U
 	}
 }
 
-func (a *merchantUsecase) Fetch(c context.Context) ([]*models.Merchant, error) {
+func (a *merchantUsecase) Fetch(c context.Context, page string, offset string) ([]*models.Merchant, error) {
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 	defer cancel()
 
-	listAr, err := a.merchantRepo.Fetch(ctx)
+	listAr, err := a.merchantRepo.Fetch(ctx, page, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return listAr, nil
+}
+
+func (a *merchantUsecase) FetchCategories(c context.Context) ([]*models.MbDiscoveryCategory, error) {
+	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
+	defer cancel()
+
+	listAr, err := a.merchantRepo.FetchCategories(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -57,11 +69,11 @@ func (a *merchantUsecase) GetImagesByID(c context.Context, id int64) ([]*models.
 	return res, nil
 }
 
-func (a *merchantUsecase) FilterByMulti(c context.Context, clause string) ([]*models.Merchant, error) {
+func (a *merchantUsecase) FilterByMulti(c context.Context, clause string, page string, offset string) ([]*models.Merchant, error) {
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 	defer cancel()
 
-	res, err := a.merchantRepo.FilterByMulti(ctx, clause)
+	res, err := a.merchantRepo.FilterByMulti(ctx, clause, page, offset)
 	if err != nil {
 		return nil, err
 	}

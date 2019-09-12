@@ -31,15 +31,34 @@ func NewMerchantHandler(e *echo.Echo, us merchant.Usecase) {
 	e.GET("/merchant/:id", handler.GetByID)
 	e.GET("/merchant/filter", handler.FilterByMulti)
 	e.GET("/merchant/search", handler.SearchByKeyword)
+	e.GET("/merchant/categories", handler.FetchCategories)
 }
 
-// FetchMerchant will fetch the merchant based on given params
-func (a *MerchantHandler) FetchMerchant(c echo.Context) error {
+// FetchCategories will fetch the merchant based on given params
+func (a *MerchantHandler) FetchCategories(c echo.Context) error {
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	listAr, err := a.MUsecase.Fetch(ctx)
+	listAr, err := a.MUsecase.FetchCategories(ctx)
+	if err != nil {
+		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
+	}
+	return c.JSON(http.StatusOK, echo.Map{
+		"status": 1,
+		"data":   listAr,
+	})
+}
+
+// FetchMerchant will fetch the merchant based on given params
+func (a *MerchantHandler) FetchMerchant(c echo.Context) error {
+	page := c.QueryParam("page")
+	offset := c.QueryParam("offset")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	listAr, err := a.MUsecase.Fetch(ctx, page, offset)
 	if err != nil {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
@@ -81,18 +100,22 @@ func (a *MerchantHandler) GetByID(c echo.Context) error {
 // FilterByMulti some merchant by clause
 func (a *MerchantHandler) FilterByMulti(c echo.Context) error {
 	queryParams := c.QueryParams()
+	page := c.QueryParam("page")
+	offset := c.QueryParam("offset")
 	queryParamsSlice := []string{}
 	for key, value := range queryParams {
-		queryParamsSlice = append(queryParamsSlice, key+"="+value[0])
+		if key != "page" && key != "offset" {
+			queryParamsSlice = append(queryParamsSlice, key+"="+value[0])
+		}
 	}
-	queryParamsString := strings.Join(queryParamsSlice[:], "&")
+	queryParamsString := strings.Join(queryParamsSlice[:], " AND ")
 
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	listAr, err := a.MUsecase.FilterByMulti(ctx, queryParamsString)
+	listAr, err := a.MUsecase.FilterByMulti(ctx, queryParamsString, page, offset)
 	if err != nil {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
