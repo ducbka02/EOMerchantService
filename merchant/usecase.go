@@ -10,6 +10,7 @@ import (
 type Usecase interface {
 	Fetch(ctx context.Context, page string, offset string) ([]*models.Merchant, error)
 	FetchCategories(ctx context.Context) ([]*models.MbDiscoveryCategory, error)
+	FetchArea(ctx context.Context) (res []*models.Area, err error)
 	GetByID(ctx context.Context, id int64) (*models.Merchant, error)
 	GetImagesByID(ctx context.Context, id int64) ([]*models.Image, error)
 	FilterByMulti(ctx context.Context, clause string, page string, offset string) ([]*models.Merchant, error)

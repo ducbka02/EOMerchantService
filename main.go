@@ -51,7 +51,7 @@ func main() {
 		log.Fatal(err)
 		os.Exit(1)
 	}
-	fmt.Println("ConnectedX")
+	fmt.Println("Connected...")
 
 	defer func() {
 		err := dbConn.Close()

@@ -28,10 +28,27 @@ func NewMerchantHandler(e *echo.Echo, us merchant.Usecase) {
 		MUsecase: us,
 	}
 	e.GET("/merchant/merchants", handler.FetchMerchant)
+	e.GET("/merchant/area", handler.FetchArea)
 	e.GET("/merchant/:id", handler.GetByID)
 	e.GET("/merchant/filter", handler.FilterByMulti)
 	e.GET("/merchant/search", handler.SearchByKeyword)
 	e.GET("/merchant/categories", handler.FetchCategories)
+}
+
+// FetchArea will fetch the merchant based on given params
+func (a *MerchantHandler) FetchArea(c echo.Context) error {
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	listAr, err := a.MUsecase.FetchArea(ctx)
+	if err != nil {
+		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
+	}
+	return c.JSON(http.StatusOK, echo.Map{
+		"status": 1,
+		"data":   listAr,
+	})
 }
 
 // FetchCategories will fetch the merchant based on given params
@@ -61,6 +78,15 @@ func (a *MerchantHandler) FetchMerchant(c echo.Context) error {
 	listAr, err := a.MUsecase.Fetch(ctx, page, offset)
 	if err != nil {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
+	}
+
+	if len(page) != 0 && len(offset) != 0 {
+		return c.JSON(http.StatusOK, echo.Map{
+			"status": 1,
+			"data":   listAr,
+			"page":   page,
+			"offset": offset,
+		})
 	}
 	return c.JSON(http.StatusOK, echo.Map{
 		"status": 1,
@@ -105,7 +131,17 @@ func (a *MerchantHandler) FilterByMulti(c echo.Context) error {
 	queryParamsSlice := []string{}
 	for key, value := range queryParams {
 		if key != "page" && key != "offset" {
-			queryParamsSlice = append(queryParamsSlice, key+"="+value[0])
+			if key == "keyword" {
+				if value[0] != "null" {
+					queryParamsSlice = append(queryParamsSlice, "name like \"%"+value[0]+"%\"")
+				}
+			} else if value[0] != "null" {
+				if strings.Contains(value[0], ",") {
+					queryParamsSlice = append(queryParamsSlice, key+" in ("+value[0]+")")
+				} else {
+					queryParamsSlice = append(queryParamsSlice, key+"="+value[0])
+				}
+			}
 		}
 	}
 	queryParamsString := strings.Join(queryParamsSlice[:], " AND ")
@@ -118,6 +154,15 @@ func (a *MerchantHandler) FilterByMulti(c echo.Context) error {
 	listAr, err := a.MUsecase.FilterByMulti(ctx, queryParamsString, page, offset)
 	if err != nil {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
+	}
+
+	if len(page) != 0 && len(offset) != 0 {
+		return c.JSON(http.StatusOK, echo.Map{
+			"status": 1,
+			"data":   listAr,
+			"page":   page,
+			"offset": offset,
+		})
 	}
 	return c.JSON(http.StatusOK, echo.Map{
 		"status": 1,

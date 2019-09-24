@@ -33,6 +33,18 @@ func (a *merchantUsecase) Fetch(c context.Context, page string, offset string) (
 	return listAr, nil
 }
 
+func (a *merchantUsecase) FetchArea(c context.Context) ([]*models.Area, error) {
+	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
+	defer cancel()
+
+	listAr, err := a.merchantRepo.FetchArea(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return listAr, nil
+}
+
 func (a *merchantUsecase) FetchCategories(c context.Context) ([]*models.MbDiscoveryCategory, error) {
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 	defer cancel()
