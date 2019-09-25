@@ -185,29 +185,31 @@ func (a *mysqlMerchantRepository) fetchDetail(ctx context.Context, query string,
 	return results, nil
 }
 
-func (a *mysqlMerchantRepository) Fetch(ctx context.Context, page string, offset string) ([]*models.Merchant, error) {
+func (a *mysqlMerchantRepository) Fetch(ctx context.Context, page string, offset string) ([]*models.Merchant, int64, error) {
 	query := `SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, mb_category_id, area_id, image, delivery, time_start, time_end, facebook FROM mb_merchant where is_deleted is null`
 	if len(page) != 0 && len(offset) != 0 {
 		pageInt, err := strconv.Atoi(page)
 		if err != nil {
-			return nil, errors.New("Page must be a number")
+			return nil, 0, errors.New("Page must be a number")
 		}
 		offsetInt, err := strconv.Atoi(offset)
 		if err != nil {
-			return nil, errors.New("Offset must be a number")
+			return nil, 0, errors.New("Offset must be a number")
 		}
 		if pageInt < 0 || offsetInt < 0 {
-			return nil, errors.New("Could not enter a negative number")
+			return nil, 0, errors.New("Could not enter a negative number")
 		}
 		query = fmt.Sprintf("SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, mb_category_id, area_id, image, delivery, time_start, time_end, facebook FROM mb_merchant where is_deleted is null ORDER BY mb_merchant_id ASC LIMIT %d, %s", (pageInt-1)*offsetInt, offset)
 	}
 	//fmt.Println(query)
+	count, _ := a.GetCountRows(ctx, "")
+	fmt.Println(count)
 	res, err := a.fetch(ctx, query)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return res, nil
+	return res, count, nil
 }
 
 func (a *mysqlMerchantRepository) FetchCategories(ctx context.Context) ([]*models.MbDiscoveryCategory, error) {
@@ -247,7 +249,7 @@ func (a *mysqlMerchantRepository) GetByID(ctx context.Context, id int64) (res *m
 	return
 }
 
-func checkCount(rows *sql.Rows) (count int) {
+func checkCount(rows *sql.Rows) (count int64) {
 	for rows.Next() {
 		err := rows.Scan(&count)
 		checkErr(err)
@@ -261,15 +263,16 @@ func checkErr(err error) {
 	}
 }
 
-func (a *mysqlMerchantRepository) GetCountRows(ctx context.Context, id int64) (int, error) {
-	query := fmt.Sprintf("SELECT COUNT(*) as count FROM mb_merchant_image WHERE is_deleted is null")
+func (a *mysqlMerchantRepository) GetCountRows(ctx context.Context, clause string) (int64, error) {
+	query := fmt.Sprintf("SELECT COUNT(*) as count FROM mb_merchant%s", clause)
+	fmt.Println(query)
 	rows, err := a.DB.QueryContext(ctx, query)
-	fmt.Println("Total count:", checkCount(rows))
+	count := checkCount(rows)
 	if err != nil {
 		logrus.Error(err)
 		return 0, err
 	}
-	return checkCount(rows), nil
+	return count, nil
 }
 
 func (a *mysqlMerchantRepository) GetImagesByID(ctx context.Context, id int64) ([]*models.Image, error) {
@@ -307,23 +310,25 @@ func (a *mysqlMerchantRepository) GetImagesByID(ctx context.Context, id int64) (
 	return results, nil
 }
 
-func (a *mysqlMerchantRepository) FilterByMulti(ctx context.Context, clause string, page string, offset string) ([]*models.Merchant, error) {
+func (a *mysqlMerchantRepository) FilterByMulti(ctx context.Context, clause string, page string, offset string) ([]*models.Merchant, int64, error) {
 	query := fmt.Sprintf("SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, mb_category_id, area_id, image, delivery, time_start, time_end, facebook FROM mb_merchant WHERE is_deleted is null AND %s", clause)
+	queryCount := fmt.Sprintf(" WHERE is_deleted is null AND %s", clause)
 	if len(clause) == 0 {
 		query = fmt.Sprintf("SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, mb_category_id, area_id, image, delivery, time_start, time_end, facebook FROM mb_merchant WHERE is_deleted is null")
+		queryCount = fmt.Sprintf(" WHERE is_deleted is null")
 	}
 
 	if len(page) != 0 && len(offset) != 0 {
 		pageInt, err := strconv.Atoi(page)
 		if err != nil {
-			return nil, errors.New("Page must be a number")
+			return nil, 0, errors.New("Page must be a number")
 		}
 		offsetInt, err := strconv.Atoi(offset)
 		if err != nil {
-			return nil, errors.New("Offset must be a number")
+			return nil, 0, errors.New("Offset must be a number")
 		}
 		if pageInt < 0 || offsetInt < 0 {
-			return nil, errors.New("Could not enter a negative number")
+			return nil, 0, errors.New("Could not enter a negative number")
 		}
 		query = fmt.Sprintf("SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, mb_category_id, area_id, image, delivery, time_start, time_end, facebook FROM mb_merchant WHERE is_deleted is null AND %s ORDER BY mb_merchant_id ASC LIMIT %d, %s", clause, (pageInt-1)*offsetInt, offset)
 		if len(clause) == 0 {
@@ -333,21 +338,23 @@ func (a *mysqlMerchantRepository) FilterByMulti(ctx context.Context, clause stri
 
 	list, err := a.fetch(ctx, query)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-
-	return list, nil
+	count, _ := a.GetCountRows(ctx, queryCount)
+	fmt.Println(count)
+	return list, count, nil
 }
 
-func (a *mysqlMerchantRepository) SearchByKeyword(ctx context.Context, keyword string) ([]*models.Merchant, error) {
+func (a *mysqlMerchantRepository) SearchByKeyword(ctx context.Context, keyword string) ([]*models.Merchant, int64, error) {
 	query := `SELECT mb_merchant_id, name, address, latitude, longitude, phone, description, mb_category_id, area_id, image, delivery, time_start, time_end, facebook FROM mb_merchant WHERE is_deleted is null AND name like ?`
 
 	list, err := a.fetch(ctx, query, "%"+keyword+"%")
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-
-	return list, nil
+	count, _ := a.GetCountRows(ctx, "")
+	fmt.Println(count)
+	return list, count, nil
 }
 
 func (a *mysqlMerchantRepository) Update(ctx context.Context, m *models.Merchant) error {

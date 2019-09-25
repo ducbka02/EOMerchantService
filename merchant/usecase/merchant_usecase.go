@@ -21,16 +21,28 @@ func NewMerchantUsecase(a merchant.Repository, timeout time.Duration) merchant.U
 	}
 }
 
-func (a *merchantUsecase) Fetch(c context.Context, page string, offset string) ([]*models.Merchant, error) {
+func (a *merchantUsecase) GetCountRows(c context.Context, clause string) (int64, error) {
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 	defer cancel()
 
-	listAr, err := a.merchantRepo.Fetch(ctx, page, offset)
+	count, err := a.merchantRepo.GetCountRows(ctx, clause)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	return listAr, nil
+	return count, nil
+}
+
+func (a *merchantUsecase) Fetch(c context.Context, page string, offset string) ([]*models.Merchant, int64, error) {
+	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
+	defer cancel()
+
+	listAr, count, err := a.merchantRepo.Fetch(ctx, page, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return listAr, count, nil
 }
 
 func (a *merchantUsecase) FetchArea(c context.Context) ([]*models.Area, error) {
@@ -81,28 +93,28 @@ func (a *merchantUsecase) GetImagesByID(c context.Context, id int64) ([]*models.
 	return res, nil
 }
 
-func (a *merchantUsecase) FilterByMulti(c context.Context, clause string, page string, offset string) ([]*models.Merchant, error) {
+func (a *merchantUsecase) FilterByMulti(c context.Context, clause string, page string, offset string) ([]*models.Merchant, int64, error) {
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 	defer cancel()
 
-	res, err := a.merchantRepo.FilterByMulti(ctx, clause, page, offset)
+	res, count, err := a.merchantRepo.FilterByMulti(ctx, clause, page, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return res, nil
+	return res, count, nil
 }
 
-func (a *merchantUsecase) SearchByKeyword(c context.Context, keyword string) ([]*models.Merchant, error) {
+func (a *merchantUsecase) SearchByKeyword(c context.Context, keyword string) ([]*models.Merchant, int64, error) {
 	ctx, cancel := context.WithTimeout(c, a.contextTimeout)
 	defer cancel()
 
-	res, err := a.merchantRepo.SearchByKeyword(ctx, keyword)
+	res, count, err := a.merchantRepo.SearchByKeyword(ctx, keyword)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return res, nil
+	return res, count, nil
 }
 
 func (a *merchantUsecase) Update(ctx context.Context, m *models.Merchant) error {

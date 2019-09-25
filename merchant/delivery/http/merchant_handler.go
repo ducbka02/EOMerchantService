@@ -75,22 +75,23 @@ func (a *MerchantHandler) FetchMerchant(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	listAr, err := a.MUsecase.Fetch(ctx, page, offset)
+	listAr, count, err := a.MUsecase.Fetch(ctx, page, offset)
 	if err != nil {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
-
 	if len(page) != 0 && len(offset) != 0 {
 		return c.JSON(http.StatusOK, echo.Map{
 			"status": 1,
 			"data":   listAr,
 			"page":   page,
 			"offset": offset,
+			"total":  count,
 		})
 	}
 	return c.JSON(http.StatusOK, echo.Map{
 		"status": 1,
 		"data":   listAr,
+		"total":  count,
 	})
 }
 
@@ -134,6 +135,9 @@ func (a *MerchantHandler) FilterByMulti(c echo.Context) error {
 			if key == "keyword" {
 				if value[0] != "null" {
 					queryParamsSlice = append(queryParamsSlice, "name like \"%"+value[0]+"%\"")
+					//queryParamsSearch := fmt.Sprintf("name like CONCAT('%s', CONVERT('%s', BINARY), '%s')", "%", value[0], "%")
+					//fmt.Println(queryParamsSearch)
+					//queryParamsSlice = append(queryParamsSlice, queryParamsSlice)
 				}
 			} else if value[0] != "null" {
 				if strings.Contains(value[0], ",") {
@@ -151,7 +155,7 @@ func (a *MerchantHandler) FilterByMulti(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	listAr, err := a.MUsecase.FilterByMulti(ctx, queryParamsString, page, offset)
+	listAr, count, err := a.MUsecase.FilterByMulti(ctx, queryParamsString, page, offset)
 	if err != nil {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
@@ -162,11 +166,13 @@ func (a *MerchantHandler) FilterByMulti(c echo.Context) error {
 			"data":   listAr,
 			"page":   page,
 			"offset": offset,
+			"total":  count,
 		})
 	}
 	return c.JSON(http.StatusOK, echo.Map{
 		"status": 1,
 		"data":   listAr,
+		"total":  count,
 	})
 }
 
@@ -181,13 +187,14 @@ func (a *MerchantHandler) SearchByKeyword(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	listAr, err := a.MUsecase.SearchByKeyword(ctx, keyword)
+	listAr, count, err := a.MUsecase.SearchByKeyword(ctx, keyword)
 	if err != nil {
 		return c.JSON(getStatusCode(err), ResponseError{Message: err.Error()})
 	}
 	return c.JSON(http.StatusOK, echo.Map{
 		"status": 1,
 		"data":   listAr,
+		"total":  count,
 	})
 }
 
